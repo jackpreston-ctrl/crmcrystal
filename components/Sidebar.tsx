@@ -1,0 +1,272 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+type Role = "OWNER" | "EMPLOYEE";
+type SidebarUser = { id: number; name: string; email: string; role: Role };
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: (props: React.SVGProps<SVGSVGElement>) => JSX.Element;
+  ownerOnly?: boolean;
+};
+
+const NAV: NavItem[] = [
+  { href: "/", label: "Dashboard", icon: DashboardIcon },
+  { href: "/clients", label: "Clients", icon: ClientsIcon },
+  { href: "/jobs", label: "Schedule", icon: ScheduleIcon },
+  { href: "/map", label: "Canvassing", icon: MapPinIcon },
+  { href: "/team", label: "Team", icon: TeamIcon, ownerOnly: true },
+];
+
+function isActive(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+}
+
+export function Sidebar({ user }: { user: SidebarUser }) {
+  const pathname = usePathname();
+  const items = NAV.filter((item) => !item.ownerOnly || user.role === "OWNER");
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  }
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+        <Brand />
+        <nav className="flex-1 space-y-1 px-3 py-4">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  active
+                    ? "bg-sky-50 text-sky-700"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="border-t border-slate-200 p-3">
+          <div className="flex items-center gap-2.5 px-1 py-1.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+              {initials(user.name)}
+            </span>
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-sm font-medium text-slate-900">
+                {user.name}
+              </p>
+              <p className="truncate text-[11px] capitalize text-slate-400">
+                {user.role.toLowerCase()}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={logout}
+            className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+          >
+            <LogoutIcon className="h-4 w-4" />
+            Log out
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile top bar */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
+        <Brand compact />
+        <button
+          onClick={logout}
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+        >
+          Log out
+        </button>
+      </header>
+
+      {/* Mobile bottom nav */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(pathname, item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
+                active ? "text-sky-700" : "text-slate-500"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </>
+  );
+}
+
+function Brand({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      className={`flex items-center gap-2.5 ${
+        compact ? "" : "border-b border-slate-200 px-5 py-4"
+      }`}
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-sm">
+        <DropletIcon className="h-5 w-5" />
+      </span>
+      <div className="leading-tight">
+        <p className="text-sm font-semibold text-slate-900">Crystal Clear</p>
+        <p className="text-[11px] text-slate-400">CRM · Atherton</p>
+      </div>
+    </div>
+  );
+}
+
+/* --- Icons (inline, no dependency) --- */
+
+function DropletIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 3s6 6.5 6 10.5a6 6 0 1 1-12 0C6 9.5 12 3 12 3Z" />
+    </svg>
+  );
+}
+
+function DashboardIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function ClientsIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function ScheduleIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function MapPinIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+      <circle cx="12" cy="10" r="3" />
+    </svg>
+  );
+}
+
+function TeamIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+      <circle cx="10" cy="7" r="4" />
+      <path d="M21 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="m17 11 2 2 4-4" />
+    </svg>
+  );
+}
+
+function LogoutIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5M21 12H9" />
+    </svg>
+  );
+}

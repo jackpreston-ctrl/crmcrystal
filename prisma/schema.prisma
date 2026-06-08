@@ -1,0 +1,76 @@
+// Crystal Clear CRM — database schema
+// SQLite + Prisma. Two models: Client and Job.
+// A "Job" represents both quotes and booked work; the `status` field
+// distinguishes them (QUOTE | SCHEDULED | COMPLETED | CANCELLED).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        Int      @id @default(autoincrement())
+  firstName String
+  lastName  String
+  phone     String
+  email     String?
+  address   String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobs      Job[]
+  knocks    Knock[]
+}
+
+model Job {
+  id          Int      @id @default(autoincrement())
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId    Int
+  title       String?
+  // App-level values: QUOTE | SCHEDULED | COMPLETED | CANCELLED
+  status      String   @default("QUOTE")
+  scheduledAt DateTime
+  price       Float    @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([scheduledAt])
+}
+
+// A single door-to-door knock logged on the canvassing map.
+model Knock {
+  id        Int      @id @default(autoincrement())
+  lat       Float
+  lng       Float
+  address   String?
+  // App-level values: NOT_HOME | CALLBACK | NOT_INTERESTED | INTERESTED | APPOINTMENT | SOLD | DO_NOT_KNOCK
+  status    String   @default("NOT_HOME")
+  notes     String?
+  knockedAt DateTime @default(now())
+  // Optional link to a client (e.g. once a door converts). Kept if the client is deleted.
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([knockedAt])
+  @@index([clientId])
+}
+
+// A person who can log into the CRM.
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  // App-level values: OWNER | EMPLOYEE
+  role         String   @default("EMPLOYEE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
