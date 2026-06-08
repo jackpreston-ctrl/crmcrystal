@@ -135,4 +135,4 @@ Either way: use a **strong `AUTH_SECRET`** and change the starter password immed
 
 - Passwords are hashed with **bcrypt**; sessions are **signed, HTTP-only cookies**. Keep `AUTH_SECRET` private and use a strong, unique value in production.
 - Always serve the app over **HTTPS** in production (Railway/Render/Vercel do this for you) so logins are encrypted in transit.
-- `npm install` may report a few Next.js advisories — mostly for features this app doesn't use. **Before hosting publicly**, update Next.js to the latest patch (`npm i next@latest`) and re-test.
+- Next.js is pinned to **14.2.35** (security-patched). `npm audit` may still list Next advisories — they're aggregated and mostly cover features this app doesn't use (image optimizer, i18n, RSC caching). Stay on the latest **14.2.x** patch; jumping to Next 15/16 needs code changes (async route params, React 19).

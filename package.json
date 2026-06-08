@@ -20,7 +20,7 @@
     "bcryptjs": "2.4.3",
     "jose": "5.9.6",
     "leaflet": "1.9.4",
-    "next": "14.2.18",
+    "next": "14.2.35",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-leaflet": "4.2.1"
