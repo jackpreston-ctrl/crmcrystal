@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isJobStatus } from "@/lib/utils";
+import { isJobStatus, isServiceType } from "@/lib/utils";
 import type { Prisma } from "@prisma/client";
 
 // PATCH /api/jobs/:id — update a job (status change or full edit).
@@ -25,6 +25,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid status." }, { status: 400 });
     }
     data.status = body.status;
+    // Stamp the completion date when entering COMPLETED, clear it when leaving.
+    data.completedAt = body.status === "COMPLETED" ? new Date() : null;
+  }
+  if (body.serviceType !== undefined) {
+    const raw = String(body.serviceType ?? "").trim();
+    if (raw && !isServiceType(raw)) {
+      return NextResponse.json({ error: "Invalid service type." }, { status: 400 });
+    }
+    data.serviceType = raw || null;
   }
   if (body.scheduledAt !== undefined) {
     const date = new Date(body.scheduledAt);

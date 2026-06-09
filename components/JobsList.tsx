@@ -8,6 +8,7 @@ import {
   JOB_STATUSES,
   STATUS_LABELS,
   STATUS_STYLES,
+  SERVICE_LABELS,
   JobDTO,
   JobStatus,
   dateGroupLabel,
@@ -151,11 +152,14 @@ export function JobsList({
                         <p className="truncate font-medium text-slate-900">
                           {job.clientName}
                         </p>
-                        {job.title && (
-                          <p className="truncate text-sm text-slate-500">
-                            {job.title}
-                          </p>
-                        )}
+                        <p className="truncate text-sm text-slate-500">
+                          {[
+                            job.serviceType && SERVICE_LABELS[job.serviceType],
+                            job.title,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </p>
                       </div>
                       <div className="text-sm font-semibold text-slate-900">
                         {formatCurrency(job.price)}

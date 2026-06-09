@@ -31,9 +31,13 @@ model Job {
   client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId    Int
   title       String?
+  // App-level values: WINDOW | SOLAR | GUTTER | PRESSURE_WASHING (validated in lib/utils.ts)
+  serviceType String?
   // App-level values: QUOTE | SCHEDULED | COMPLETED | CANCELLED
   status      String   @default("QUOTE")
   scheduledAt DateTime
+  // Stamped when status becomes COMPLETED; cleared if it moves back out. Drives rebooking.
+  completedAt DateTime?
   price       Float    @default(0)
   notes       String?
   createdAt   DateTime @default(now())
@@ -41,6 +45,7 @@ model Job {
 
   @@index([clientId])
   @@index([scheduledAt])
+  @@index([serviceType])
 }
 
 // A single door-to-door knock logged on the canvassing map.

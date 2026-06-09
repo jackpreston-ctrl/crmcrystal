@@ -25,6 +25,46 @@ export const STATUS_STYLES: Record<JobStatus, string> = {
   CANCELLED: "bg-rose-50 text-rose-700 ring-rose-600/20",
 };
 
+/* --- Service types (window / solar / gutter / pressure washing) --- */
+
+export const SERVICE_TYPES = [
+  "WINDOW",
+  "SOLAR",
+  "GUTTER",
+  "PRESSURE_WASHING",
+] as const;
+
+export type ServiceType = (typeof SERVICE_TYPES)[number];
+
+export const SERVICE_LABELS: Record<ServiceType, string> = {
+  WINDOW: "Window cleaning",
+  SOLAR: "Solar panel cleaning",
+  GUTTER: "Gutter cleaning",
+  PRESSURE_WASHING: "Pressure washing",
+};
+
+export const SERVICE_STYLES: Record<ServiceType, string> = {
+  WINDOW: "bg-sky-50 text-sky-700 ring-sky-600/20",
+  SOLAR: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  GUTTER: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  PRESSURE_WASHING: "bg-violet-50 text-violet-700 ring-violet-600/20",
+};
+
+// Rebooking cadence in months per service — drives the "who's due" view.
+export const REBOOK_MONTHS: Record<ServiceType, number> = {
+  WINDOW: 4,
+  SOLAR: 6,
+  GUTTER: 6,
+  PRESSURE_WASHING: 12,
+};
+
+export function isServiceType(value: unknown): value is ServiceType {
+  return (
+    typeof value === "string" &&
+    (SERVICE_TYPES as readonly string[]).includes(value)
+  );
+}
+
 // Serializable shapes passed from server components to client components.
 export type ClientDTO = {
   id: number;
@@ -43,10 +83,24 @@ export type JobDTO = {
   clientId: number;
   clientName: string;
   title: string | null;
+  serviceType: ServiceType | null;
   status: JobStatus;
   scheduledAt: string; // ISO string
+  completedAt: string | null; // ISO string
   price: number;
   notes: string | null;
+};
+
+// One "this property is due for re-service" row.
+export type DueDTO = {
+  clientId: number;
+  clientName: string;
+  address: string;
+  serviceType: ServiceType;
+  lastCompletedAt: string; // ISO string
+  monthsSince: number;
+  intervalMonths: number;
+  overdueByMonths: number;
 };
 
 export function isJobStatus(value: unknown): value is JobStatus {
@@ -90,6 +144,24 @@ export function formatDateTime(value: string | Date): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+// "YYYY-MM-DDTHH:mm" in local time — for <input type="datetime-local"> defaults.
+export function toLocalDateTimeInput(value: string | Date = new Date()): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+// Whole months elapsed between a past date and now (used by the "who's due" view).
+export function monthsSince(value: string | Date): number {
+  const d = typeof value === "string" ? new Date(value) : value;
+  const now = new Date();
+  let months =
+    (now.getFullYear() - d.getFullYear()) * 12 +
+    (now.getMonth() - d.getMonth());
+  if (now.getDate() < d.getDate()) months -= 1;
+  return Math.max(0, months);
 }
 
 // Heading like "Today · Monday, Jun 9" for grouping the schedule by day.

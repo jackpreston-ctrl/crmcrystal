@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isJobStatus } from "@/lib/utils";
+import { isJobStatus, isServiceType } from "@/lib/utils";
 
 // GET /api/jobs — list all jobs (soonest first) with their client.
 export async function GET() {
@@ -24,12 +24,16 @@ export async function POST(req: Request) {
   const title = String(body.title ?? "").trim();
   const notes = String(body.notes ?? "").trim();
   const price = Number(body.price);
+  const serviceTypeRaw = String(body.serviceType ?? "").trim();
 
   if (!Number.isInteger(clientId)) {
     return NextResponse.json({ error: "A client is required." }, { status: 400 });
   }
   if (!isJobStatus(status)) {
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });
+  }
+  if (serviceTypeRaw && !isServiceType(serviceTypeRaw)) {
+    return NextResponse.json({ error: "Invalid service type." }, { status: 400 });
   }
   if (!scheduledAt || Number.isNaN(scheduledAt.getTime())) {
     return NextResponse.json(
@@ -43,6 +47,9 @@ export async function POST(req: Request) {
       clientId,
       status,
       scheduledAt,
+      serviceType: serviceTypeRaw || null,
+      // Stamp completion the moment a job is created already done.
+      completedAt: status === "COMPLETED" ? new Date() : null,
       title: title || null,
       notes: notes || null,
       price: Number.isFinite(price) ? price : 0,

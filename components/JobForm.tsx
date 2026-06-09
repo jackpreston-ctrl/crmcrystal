@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { JOB_STATUSES, STATUS_LABELS } from "@/lib/utils";
+import {
+  JOB_STATUSES,
+  STATUS_LABELS,
+  SERVICE_TYPES,
+  SERVICE_LABELS,
+  ServiceType,
+  toLocalDateTimeInput,
+} from "@/lib/utils";
 
 const inputClass =
   "block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm transition placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20";
@@ -9,15 +16,27 @@ const inputClass =
 export function JobForm({
   clients,
   onSuccess,
+  defaults,
 }: {
   clients: { id: number; name: string }[];
   onSuccess: () => void;
+  defaults?: {
+    clientId?: number;
+    serviceType?: ServiceType;
+    scheduledAt?: string;
+  };
 }) {
   const [form, setForm] = useState({
-    clientId: clients[0] ? String(clients[0].id) : "",
+    clientId: defaults?.clientId
+      ? String(defaults.clientId)
+      : clients[0]
+        ? String(clients[0].id)
+        : "",
     title: "",
+    // Smart defaults: most-common service, today's date. Overridden by `defaults`.
+    serviceType: String(defaults?.serviceType ?? "WINDOW"),
     status: "QUOTE" as (typeof JOB_STATUSES)[number],
-    scheduledAt: "",
+    scheduledAt: defaults?.scheduledAt ?? toLocalDateTimeInput(),
     price: "",
     notes: "",
   });
@@ -67,10 +86,28 @@ export function JobForm({
         </select>
       </Field>
 
-      <Field label="Service / description">
+      <Field label="Service" required>
+        <select
+          className={inputClass}
+          value={form.serviceType}
+          onChange={(e) => update("serviceType", e.target.value)}
+          required
+        >
+          <option value="" disabled>
+            Select a service…
+          </option>
+          {SERVICE_TYPES.map((s) => (
+            <option key={s} value={s}>
+              {SERVICE_LABELS[s]}
+            </option>
+          ))}
+        </select>
+      </Field>
+
+      <Field label="Description">
         <input
           className={inputClass}
-          placeholder="e.g. Full exterior window clean"
+          placeholder="e.g. Full exterior, 2 stories"
           value={form.title}
           onChange={(e) => update("title", e.target.value)}
         />

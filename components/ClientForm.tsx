@@ -11,7 +11,8 @@ export function ClientForm({ onSuccess }: { onSuccess: () => void }) {
     lastName: "",
     phone: "",
     email: "",
-    address: "",
+    street: "",
+    cityState: "Atherton, CA 94027", // pre-filled so only the street is typed
     notes: "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -26,10 +27,20 @@ export function ClientForm({ onSuccess }: { onSuccess: () => void }) {
     setSaving(true);
     setError(null);
     try {
+      const address = [form.street.trim(), form.cityState.trim()]
+        .filter(Boolean)
+        .join(", ");
       const res = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          phone: form.phone,
+          email: form.email,
+          address,
+          notes: form.notes,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -86,13 +97,21 @@ export function ClientForm({ onSuccess }: { onSuccess: () => void }) {
         />
       </Field>
 
-      <Field label="Property address" required>
+      <Field label="Street address" required>
         <input
           className={inputClass}
-          placeholder="123 Example Ln, Atherton, CA 94027"
-          value={form.address}
-          onChange={(e) => update("address", e.target.value)}
+          placeholder="123 Example Ln"
+          value={form.street}
+          onChange={(e) => update("street", e.target.value)}
           required
+        />
+      </Field>
+
+      <Field label="City / state / ZIP">
+        <input
+          className={inputClass}
+          value={form.cityState}
+          onChange={(e) => update("cityState", e.target.value)}
         />
       </Field>
 

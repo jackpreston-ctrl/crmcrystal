@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
+import { QuickAdd } from "@/components/QuickAdd";
 import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function AppLayout({
     <div className="lg:flex">
       <Sidebar user={user} />
       <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
+      <QuickAdd />
     </div>
   );
 }
