@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isJobStatus, isServiceType } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth";
+import { isJobStatus, isServiceType, parseWorkerRows } from "@/lib/utils";
 import type { Prisma } from "@prisma/client";
 
 // PATCH /api/jobs/:id — update a job (status change or full edit).
+// Pricing & attribution (price, soldBy, workers) are owner-only.
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
+  const me = await getCurrentUser();
+  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isOwner = me.role === "OWNER";
+
   const id = Number(params.id);
   if (!Number.isInteger(id)) {
     return NextResponse.json({ error: "Invalid id." }, { status: 400 });
@@ -18,7 +24,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const data: Prisma.JobUpdateInput = {};
+  // Unchecked lets us assign scalar FKs (clientId, soldById) directly.
+  const data: Prisma.JobUncheckedUpdateInput = {};
 
   if (body.status !== undefined) {
     if (!isJobStatus(body.status)) {
@@ -27,6 +34,13 @@ export async function PATCH(
     data.status = body.status;
     // Stamp the completion date when entering COMPLETED, clear it when leaving.
     data.completedAt = body.status === "COMPLETED" ? new Date() : null;
+  }
+  if (body.clientId !== undefined) {
+    const clientId = Number(body.clientId);
+    if (!Number.isInteger(clientId)) {
+      return NextResponse.json({ error: "Invalid client." }, { status: 400 });
+    }
+    data.clientId = clientId;
   }
   if (body.serviceType !== undefined) {
     const raw = String(body.serviceType ?? "").trim();
@@ -42,15 +56,25 @@ export async function PATCH(
     }
     data.scheduledAt = date;
   }
-  if (body.price !== undefined) {
-    const price = Number(body.price);
-    data.price = Number.isFinite(price) ? price : 0;
-  }
   if (body.title !== undefined) {
     data.title = String(body.title).trim() || null;
   }
   if (body.notes !== undefined) {
     data.notes = String(body.notes).trim() || null;
+  }
+
+  // --- Owner-only: price & attribution ---
+  if (isOwner && body.price !== undefined) {
+    const price = Number(body.price);
+    data.price = Number.isFinite(price) ? price : 0;
+  }
+  if (isOwner && body.soldById !== undefined) {
+    const soldById = Number(body.soldById);
+    data.soldById = Number.isInteger(soldById) ? soldById : null;
+  }
+  if (isOwner && body.workers !== undefined) {
+    // Replace the whole worker set in one atomic update.
+    data.workers = { deleteMany: {}, create: parseWorkerRows(body.workers) };
   }
 
   try {
@@ -59,7 +83,10 @@ export async function PATCH(
       data,
       include: { client: true },
     });
-    return NextResponse.json(job);
+    // Employees never receive price/attribution, even in the echo of their own edit.
+    if (isOwner) return NextResponse.json(job);
+    const { price, soldById, ...safe } = job;
+    return NextResponse.json(safe);
   } catch {
     return NextResponse.json({ error: "Job not found." }, { status: 404 });
   }

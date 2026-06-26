@@ -9,6 +9,7 @@ export type TeamUser = {
   name: string;
   email: string;
   role: "OWNER" | "EMPLOYEE";
+  defaultHourlyRate: number | null;
   createdAt: string;
 };
 
@@ -99,6 +100,9 @@ export function TeamManager({
               >
                 {u.role === "OWNER" ? "Owner" : "Employee"}
               </span>
+              <span className="w-14 text-right text-sm font-medium text-slate-500">
+                {u.defaultHourlyRate != null ? `$${u.defaultHourlyRate}/hr` : "—"}
+              </span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setEditing(u)}
@@ -162,6 +166,9 @@ function UserForm({
   const [email, setEmail] = useState(existing?.email ?? "");
   const [role, setRole] = useState<TeamUser["role"]>(existing?.role ?? "EMPLOYEE");
   const [password, setPassword] = useState("");
+  const [rate, setRate] = useState(
+    existing?.defaultHourlyRate != null ? String(existing.defaultHourlyRate) : ""
+  );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -169,7 +176,12 @@ function UserForm({
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const payload: Record<string, string> = { name, email, role };
+    const payload: Record<string, string> = {
+      name,
+      email,
+      role,
+      defaultHourlyRate: rate,
+    };
     if (password) payload.password = password;
     try {
       const res = await fetch(
@@ -250,10 +262,29 @@ function UserForm({
         </label>
       </div>
 
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-slate-700">
+          Default hourly rate (USD)
+        </span>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          className={inputClass}
+          value={rate}
+          onChange={(e) => setRate(e.target.value)}
+          placeholder="e.g. 30"
+        />
+        <span className="mt-1 block text-xs text-slate-400">
+          Pre-fills this person&rsquo;s pay when they&rsquo;re added as a worker
+          on a job. Leave blank if unsure.
+        </span>
+      </label>
+
       <p className="text-xs text-slate-400">
         {role === "OWNER"
           ? "Owners can manage the team and see everything."
-          : "Employees can use the CRM but can't manage the team."}
+          : "Employees use the CRM and see only their own earnings."}
       </p>
 
       {error && <p className="text-sm text-rose-600">{error}</p>}

@@ -1,6 +1,6 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "deploy": {
-    "startCommand": "npx prisma db push --skip-generate && npm run start"
+    "startCommand": "npx prisma db push --skip-generate && (node prisma/ensure-team.mjs || true) && npm run start"
   }
 }

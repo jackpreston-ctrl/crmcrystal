@@ -1,18 +1,32 @@
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import { JobsList } from "@/components/JobsList";
-import { JobDTO, isJobStatus, isServiceType } from "@/lib/utils";
+import { JobDTO, UserLite, isJobStatus, isServiceType } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function JobsPage() {
-  const [jobRows, clientRows] = await Promise.all([
+  const me = await getCurrentUser();
+  const isOwner = me?.role === "OWNER";
+
+  const [jobRows, clientRows, userRows] = await Promise.all([
     prisma.job.findMany({
       orderBy: { scheduledAt: "asc" },
-      include: { client: true },
+      include: {
+        client: true,
+        soldBy: true,
+        workers: { include: { user: true } },
+      },
     }),
     prisma.client.findMany({
       orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     }),
+    isOwner
+      ? prisma.user.findMany({
+          orderBy: [{ role: "desc" }, { name: "asc" }],
+          select: { id: true, name: true, role: true, defaultHourlyRate: true },
+        })
+      : Promise.resolve([] as UserLite[]),
   ]);
 
   const jobs: JobDTO[] = jobRows.map((j) => ({
@@ -24,8 +38,19 @@ export default async function JobsPage() {
     status: isJobStatus(j.status) ? j.status : "QUOTE",
     scheduledAt: j.scheduledAt.toISOString(),
     completedAt: j.completedAt ? j.completedAt.toISOString() : null,
-    price: j.price,
+    // Employees never receive prices or attribution.
+    price: isOwner ? j.price : null,
     notes: j.notes,
+    soldById: isOwner ? j.soldById : null,
+    soldByName: isOwner && j.soldBy ? j.soldBy.name : null,
+    workers: isOwner
+      ? j.workers.map((w) => ({
+          userId: w.userId,
+          name: w.user.name,
+          hours: w.hours,
+          hourlyRate: w.hourlyRate,
+        }))
+      : [],
   }));
 
   const clients = clientRows.map((c) => ({
@@ -43,7 +68,12 @@ export default async function JobsPage() {
           Quotes and jobs, grouped by day.
         </p>
       </header>
-      <JobsList jobs={jobs} clients={clients} />
+      <JobsList
+        jobs={jobs}
+        clients={clients}
+        users={userRows}
+        canManageMoney={!!isOwner}
+      />
     </div>
   );
 }

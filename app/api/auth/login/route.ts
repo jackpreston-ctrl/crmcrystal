@@ -7,16 +7,21 @@ import type { Role } from "@/lib/session";
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const email = String(body?.email ?? "").trim().toLowerCase();
+  const userId = Number(body?.userId);
+  const hasUserId = Number.isInteger(userId);
   const password = String(body?.password ?? "");
 
-  if (!email || !password) {
+  if ((!email && !hasUserId) || !password) {
     return NextResponse.json(
-      { error: "Email and password are required." },
+      { error: "A profile (or email) and password are required." },
       { status: 400 }
     );
   }
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  // Profile picker posts a userId; the classic form posts an email.
+  const user = hasUserId
+    ? await prisma.user.findUnique({ where: { id: userId } })
+    : await prisma.user.findUnique({ where: { email } });
   // Run a compare even when the user is missing to avoid leaking which emails exist.
   const ok = user
     ? await verifyPassword(password, user.passwordHash)

@@ -59,6 +59,51 @@ async function main() {
     },
   });
 
+  // --- Team: two owners (Jack, Kasra) + two crew (Casey, Josh) ---
+  // Existing accounts keep their passwords; we only ensure role + rate.
+  await prisma.user.upsert({
+    where: { email: "jackjjpreston@gmail.com" },
+    update: {},
+    create: {
+      name: "Jack",
+      email: "jackjjpreston@gmail.com",
+      role: "OWNER",
+      passwordHash: await bcrypt.hash("changeme123", 11),
+    },
+  });
+  await prisma.user.upsert({
+    where: { email: "kasra@crystalclear.com" },
+    update: { role: "OWNER" },
+    create: {
+      name: "Kasra",
+      email: "kasra@crystalclear.com",
+      role: "OWNER",
+      passwordHash: await bcrypt.hash("booboo", 11),
+    },
+  });
+  const casey = await prisma.user.upsert({
+    where: { email: "casey@crystalclear.com" },
+    update: { role: "EMPLOYEE", defaultHourlyRate: 30 },
+    create: {
+      name: "Casey",
+      email: "casey@crystalclear.com",
+      role: "EMPLOYEE",
+      defaultHourlyRate: 30,
+      passwordHash: await bcrypt.hash("casey123", 11),
+    },
+  });
+  const josh = await prisma.user.upsert({
+    where: { email: "josh@crystalclear.com" },
+    update: { role: "EMPLOYEE", defaultHourlyRate: 28 },
+    create: {
+      name: "Josh",
+      email: "josh@crystalclear.com",
+      role: "EMPLOYEE",
+      defaultHourlyRate: 28,
+      passwordHash: await bcrypt.hash("josh650", 11),
+    },
+  });
+
   const jobs: Prisma.JobUncheckedCreateInput[] = [
     {
       clientId: eleanor.id,
@@ -68,6 +113,13 @@ async function main() {
       scheduledAt: at(2, 9, 0),
       price: 480,
       notes: "Gated entry — code 4417. Two dogs in the back yard.",
+      soldById: casey.id,
+      workers: {
+        create: [
+          { userId: casey.id, hours: 4, hourlyRate: 30 },
+          { userId: josh.id, hours: 4, hourlyRate: 28 },
+        ],
+      },
     },
     {
       clientId: eleanor.id,
@@ -76,6 +128,7 @@ async function main() {
       status: "QUOTE",
       scheduledAt: at(2, 11, 30),
       price: 260,
+      soldById: josh.id,
     },
     {
       clientId: raymond.id,
@@ -84,6 +137,8 @@ async function main() {
       status: "SCHEDULED",
       scheduledAt: at(4, 13, 0),
       price: 320,
+      soldById: josh.id,
+      workers: { create: [{ userId: josh.id, hours: 2, hourlyRate: 28 }] },
     },
     {
       clientId: mei.id,
@@ -93,6 +148,7 @@ async function main() {
       scheduledAt: at(6, 10, 0),
       price: 540,
       notes: "Wants a written quote before booking.",
+      soldById: casey.id,
     },
     {
       clientId: grace.id,
@@ -101,6 +157,7 @@ async function main() {
       scheduledAt: at(-5, 8, 0),
       completedAt: at(-5, 8, 0),
       price: 75,
+      workers: { create: [{ userId: casey.id, hours: 1, hourlyRate: 30 }] },
     },
     {
       clientId: raymond.id,
@@ -110,6 +167,8 @@ async function main() {
       scheduledAt: at(-2, 14, 0),
       completedAt: at(-2, 14, 0),
       price: 150,
+      soldById: casey.id,
+      workers: { create: [{ userId: casey.id, hours: 1.5, hourlyRate: 30 }] },
     },
     {
       clientId: mei.id,
@@ -130,6 +189,13 @@ async function main() {
       scheduledAt: at(-185, 9, 0),
       completedAt: at(-185, 9, 0),
       price: 460,
+      soldById: casey.id,
+      workers: {
+        create: [
+          { userId: casey.id, hours: 4, hourlyRate: 30 },
+          { userId: josh.id, hours: 3, hourlyRate: 28 },
+        ],
+      },
     },
     {
       clientId: raymond.id,
@@ -139,6 +205,8 @@ async function main() {
       scheduledAt: at(-275, 10, 0),
       completedAt: at(-275, 10, 0),
       price: 300,
+      soldById: josh.id,
+      workers: { create: [{ userId: josh.id, hours: 3, hourlyRate: 28 }] },
     },
     {
       clientId: grace.id,
@@ -148,6 +216,8 @@ async function main() {
       scheduledAt: at(-245, 11, 0),
       completedAt: at(-245, 11, 0),
       price: 280,
+      soldById: casey.id,
+      workers: { create: [{ userId: josh.id, hours: 2.5, hourlyRate: 28 }] },
     },
     {
       clientId: mei.id,
@@ -157,6 +227,13 @@ async function main() {
       scheduledAt: at(-426, 9, 0),
       completedAt: at(-426, 9, 0),
       price: 350,
+      soldById: josh.id,
+      workers: {
+        create: [
+          { userId: casey.id, hours: 3, hourlyRate: 30 },
+          { userId: josh.id, hours: 3, hourlyRate: 28 },
+        ],
+      },
     },
   ];
 
@@ -236,21 +313,8 @@ async function main() {
     await prisma.knock.create({ data: knock });
   }
 
-  // Ensure an owner login exists. Existing user accounts are left untouched
-  // (re-seeding never resets passwords or removes your team).
-  await prisma.user.upsert({
-    where: { email: "jackjjpreston@gmail.com" },
-    update: {},
-    create: {
-      name: "Jack Preston",
-      email: "jackjjpreston@gmail.com",
-      role: "OWNER",
-      passwordHash: await bcrypt.hash("changeme123", 11),
-    },
-  });
-
   console.log(
-    `✅  Seeded 4 clients, ${jobs.length} jobs, ${knocks.length} knocks, and an owner login.`
+    `✅  Seeded 4 clients, ${jobs.length} jobs, ${knocks.length} knocks, and 4 logins (2 owners, 2 crew).`
   );
 }
 

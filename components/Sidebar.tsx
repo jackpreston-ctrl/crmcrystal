@@ -15,10 +15,10 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: "/", label: "Dashboard", icon: DashboardIcon },
+  { href: "/map", label: "Canvassing", icon: MapPinIcon },
   { href: "/due", label: "Due", icon: DueIcon },
   { href: "/clients", label: "Clients", icon: ClientsIcon },
   { href: "/jobs", label: "Schedule", icon: ScheduleIcon },
-  { href: "/map", label: "Canvassing", icon: MapPinIcon },
   { href: "/team", label: "Team", icon: TeamIcon, ownerOnly: true },
 ];
 
@@ -36,23 +36,6 @@ function initials(name: string) {
     .join("");
 }
 
-function DueIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  );
-}
-
 export function Sidebar({ user }: { user: SidebarUser }) {
   const pathname = usePathname();
   const items = NAV.filter((item) => !item.ownerOnly || user.role === "OWNER");
@@ -64,10 +47,10 @@ export function Sidebar({ user }: { user: SidebarUser }) {
 
   return (
     <>
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+      {/* Desktop sidebar — dark navy */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-white/5 bg-gradient-to-b from-slate-900 to-slate-950 lg:flex">
         <Brand />
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-1 px-3 py-5">
           {items.map((item) => {
             const Icon = item.icon;
             const active = isActive(pathname, item.href);
@@ -75,35 +58,40 @@ export function Sidebar({ user }: { user: SidebarUser }) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-sky-50 text-sky-700"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    ? "bg-white/10 text-white"
+                    : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
               >
-                <Icon className="h-5 w-5" />
+                {active && (
+                  <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-gold-400" />
+                )}
+                <Icon
+                  className={`h-5 w-5 transition-colors ${
+                    active ? "text-gold-300" : "text-slate-500 group-hover:text-slate-300"
+                  }`}
+                />
                 {item.label}
               </Link>
             );
           })}
         </nav>
-        <div className="border-t border-slate-200 p-3">
+        <div className="border-t border-white/5 p-3">
           <div className="flex items-center gap-2.5 px-1 py-1.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-gold-200 ring-1 ring-gold-400/20">
               {initials(user.name)}
             </span>
             <div className="min-w-0 leading-tight">
-              <p className="truncate text-sm font-medium text-slate-900">
-                {user.name}
-              </p>
-              <p className="truncate text-[11px] capitalize text-slate-400">
+              <p className="truncate text-sm font-medium text-white">{user.name}</p>
+              <p className="truncate text-[11px] capitalize text-gold-300/80">
                 {user.role.toLowerCase()}
               </p>
             </div>
           </div>
           <button
             onClick={logout}
-            className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+            className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
           >
             <LogoutIcon className="h-4 w-4" />
             Log out
@@ -111,19 +99,19 @@ export function Sidebar({ user }: { user: SidebarUser }) {
         </div>
       </aside>
 
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
+      {/* Mobile top bar — dark navy */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/5 bg-slate-900/95 px-4 py-3 backdrop-blur lg:hidden">
         <Brand compact />
         <button
           onClick={logout}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+          className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
         >
           Log out
         </button>
       </header>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-slate-200 bg-white/95 backdrop-blur lg:hidden">
+      {/* Mobile bottom nav — dark navy */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/5 bg-slate-900/95 backdrop-blur lg:hidden">
         {items.map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href);
@@ -131,8 +119,8 @@ export function Sidebar({ user }: { user: SidebarUser }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
-                active ? "text-sky-700" : "text-slate-500"
+              className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                active ? "text-gold-300" : "text-slate-400"
               }`}
             >
               <Icon className="h-5 w-5" />
@@ -148,16 +136,20 @@ export function Sidebar({ user }: { user: SidebarUser }) {
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div
-      className={`flex items-center gap-2.5 ${
-        compact ? "" : "border-b border-slate-200 px-5 py-4"
+      className={`flex items-center gap-3 ${
+        compact ? "" : "border-b border-white/5 px-5 py-5"
       }`}
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-sm">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-cyan-500 text-white shadow-lg shadow-sky-500/20 ring-1 ring-gold-400/30">
         <DropletIcon className="h-5 w-5" />
       </span>
       <div className="leading-tight">
-        <p className="text-sm font-semibold text-slate-900">Crystal Clear</p>
-        <p className="text-[11px] text-slate-400">CRM · Atherton</p>
+        <p className="font-display text-base font-semibold tracking-tight text-white">
+          Crystal Clear
+        </p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-gold-300/80">
+          Atherton
+        </p>
       </div>
     </div>
   );
@@ -196,6 +188,23 @@ function DashboardIcon(props: React.SVGProps<SVGSVGElement>) {
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="14" y="14" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function DueIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
     </svg>
   );
 }

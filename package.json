@@ -10,6 +10,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "create-owner": "tsx prisma/create-owner.ts",
+    "create-employees": "tsx prisma/create-employees.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

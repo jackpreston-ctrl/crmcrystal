@@ -8,7 +8,11 @@ import { JobForm } from "@/components/JobForm";
 
 type Mode = "choose" | "client" | "job";
 
-export function QuickAdd() {
+export function QuickAdd({
+  canManageMoney = false,
+}: {
+  canManageMoney?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("choose");
@@ -96,7 +100,11 @@ export function QuickAdd() {
               Add a client first, then you can book a job or quote.
             </p>
           ) : (
-            <JobForm clients={clients} onSuccess={done} />
+            <JobForm
+              clients={clients}
+              canManageMoney={canManageMoney}
+              onSuccess={done}
+            />
           ))}
       </Modal>
     </>

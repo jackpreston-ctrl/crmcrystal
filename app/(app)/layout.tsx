@@ -17,7 +17,7 @@ export default async function AppLayout({
     <div className="lg:flex">
       <Sidebar user={user} />
       <main className="min-w-0 flex-1 pb-20 lg:pb-0">{children}</main>
-      <QuickAdd />
+      <QuickAdd canManageMoney={user.role === "OWNER"} />
     </div>
   );
 }

@@ -50,6 +50,14 @@ export const SERVICE_STYLES: Record<ServiceType, string> = {
   PRESSURE_WASHING: "bg-violet-50 text-violet-700 ring-violet-600/20",
 };
 
+// Hex colors for charts (mirrors SERVICE_STYLES).
+export const SERVICE_COLORS: Record<ServiceType, string> = {
+  WINDOW: "#0ea5e9",
+  SOLAR: "#f59e0b",
+  GUTTER: "#10b981",
+  PRESSURE_WASHING: "#8b5cf6",
+};
+
 // Rebooking cadence in months per service — drives the "who's due" view.
 export const REBOOK_MONTHS: Record<ServiceType, number> = {
   WINDOW: 4,
@@ -78,6 +86,13 @@ export type ClientDTO = {
   jobCount: number;
 };
 
+export type JobWorkerDTO = {
+  userId: number;
+  name: string;
+  hours: number;
+  hourlyRate: number;
+};
+
 export type JobDTO = {
   id: number;
   clientId: number;
@@ -87,9 +102,85 @@ export type JobDTO = {
   status: JobStatus;
   scheduledAt: string; // ISO string
   completedAt: string | null; // ISO string
-  price: number;
+  price: number | null; // null = hidden (employees don't see prices)
   notes: string | null;
+  // Attribution (owner-only; null/empty for employees).
+  soldById: number | null;
+  soldByName: string | null;
+  workers: JobWorkerDTO[];
 };
+
+/* --- Pay & attribution --- */
+
+// Commission an employee earns on a job they sold (share of the job price).
+export const COMMISSION_RATE = 0.15;
+
+export function commissionFor(price: number): number {
+  return price * COMMISSION_RATE;
+}
+
+// Clean a raw workers payload into deduped {userId,hours,hourlyRate} rows.
+export function parseWorkerRows(
+  raw: unknown
+): { userId: number; hours: number; hourlyRate: number }[] {
+  if (!Array.isArray(raw)) return [];
+  const seen = new Set<number>();
+  const rows: { userId: number; hours: number; hourlyRate: number }[] = [];
+  for (const w of raw) {
+    const userId = Number((w as { userId?: unknown })?.userId);
+    if (!Number.isInteger(userId) || seen.has(userId)) continue;
+    seen.add(userId);
+    const hours = Number((w as { hours?: unknown })?.hours);
+    const hourlyRate = Number((w as { hourlyRate?: unknown })?.hourlyRate);
+    rows.push({
+      userId,
+      hours: Number.isFinite(hours) && hours > 0 ? hours : 0,
+      hourlyRate: Number.isFinite(hourlyRate) && hourlyRate > 0 ? hourlyRate : 0,
+    });
+  }
+  return rows;
+}
+
+// A teammate, slimmed for selects and the profile picker.
+export type UserLite = {
+  id: number;
+  name: string;
+  role: string;
+  defaultHourlyRate: number | null;
+};
+
+// One person's pay summary, scoped to their own jobs.
+export type EmployeeEarnings = {
+  commission: number; // 15% of price on jobs they sold
+  hourly: number; // hours * rate on jobs they worked
+  total: number;
+  soldCount: number;
+  workedCount: number;
+  hours: number;
+};
+
+// Deterministic tile color + initials for profile avatars (no schema needed).
+export const PROFILE_GRADIENTS = [
+  "from-sky-400 to-cyan-500",
+  "from-violet-400 to-indigo-500",
+  "from-amber-400 to-orange-500",
+  "from-emerald-400 to-teal-500",
+  "from-rose-400 to-pink-500",
+  "from-blue-400 to-indigo-500",
+];
+
+export function profileGradient(id: number): string {
+  return PROFILE_GRADIENTS[Math.abs(id) % PROFILE_GRADIENTS.length];
+}
+
+export function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 // One "this property is due for re-service" row.
 export type DueDTO = {

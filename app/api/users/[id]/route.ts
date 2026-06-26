@@ -64,12 +64,34 @@ export async function PATCH(
     }
     data.role = role;
   }
+  if (body?.defaultHourlyRate !== undefined) {
+    const raw = body.defaultHourlyRate;
+    if (raw === null || raw === "") {
+      data.defaultHourlyRate = null;
+    } else {
+      const rate = Number(raw);
+      if (!Number.isFinite(rate) || rate < 0) {
+        return NextResponse.json(
+          { error: "Invalid hourly rate." },
+          { status: 400 }
+        );
+      }
+      data.defaultHourlyRate = rate;
+    }
+  }
 
   try {
     const user = await prisma.user.update({
       where: { id },
       data,
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        defaultHourlyRate: true,
+        createdAt: true,
+      },
     });
     return NextResponse.json(user);
   } catch (e) {

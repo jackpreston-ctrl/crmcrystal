@@ -40,12 +40,31 @@ model Job {
   completedAt DateTime?
   price       Float    @default(0)
   notes       String?
+  // Attribution: who sold the job (earns commission) and who worked it (paid hourly).
+  soldBy      User?       @relation("JobsSold", fields: [soldById], references: [id], onDelete: SetNull)
+  soldById    Int?
+  workers     JobWorker[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([clientId])
   @@index([scheduledAt])
   @@index([serviceType])
+  @@index([soldById])
+}
+
+// One person's labor on one job: hours worked at a per-job rate.
+model JobWorker {
+  id         Int   @id @default(autoincrement())
+  job        Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId      Int
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int
+  hours      Float @default(0)
+  hourlyRate Float @default(0)
+
+  @@unique([jobId, userId])
+  @@index([userId])
 }
 
 // A single door-to-door knock logged on the canvassing map.
@@ -76,6 +95,10 @@ model User {
   passwordHash String
   // App-level values: OWNER | EMPLOYEE
   role         String   @default("EMPLOYEE")
+  // Default pay rate ($/hr) for jobs this person works; can be overridden per job.
+  defaultHourlyRate Float?
+  jobsSold     Job[]       @relation("JobsSold")
+  jobWork      JobWorker[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

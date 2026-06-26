@@ -11,6 +11,7 @@ import {
   SERVICE_LABELS,
   JobDTO,
   JobStatus,
+  UserLite,
   dateGroupLabel,
   formatCurrency,
   formatTime,
@@ -21,12 +22,17 @@ type Filter = "ALL" | JobStatus;
 export function JobsList({
   jobs,
   clients,
+  users = [],
+  canManageMoney = false,
 }: {
   jobs: JobDTO[];
   clients: { id: number; name: string }[];
+  users?: UserLite[];
+  canManageMoney?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<JobDTO | null>(null);
   const [filter, setFilter] = useState<Filter>("ALL");
   const [busy, setBusy] = useState<number | null>(null);
 
@@ -160,10 +166,23 @@ export function JobsList({
                             .filter(Boolean)
                             .join(" · ") || "—"}
                         </p>
+                        {(job.soldByName || job.workers.length > 0) && (
+                          <p className="truncate text-xs text-slate-400">
+                            {[
+                              job.soldByName && `Sold: ${job.soldByName}`,
+                              job.workers.length > 0 &&
+                                `Worked: ${job.workers.map((w) => w.name).join(", ")}`,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
                       </div>
-                      <div className="text-sm font-semibold text-slate-900">
-                        {formatCurrency(job.price)}
-                      </div>
+                      {job.price !== null && (
+                        <div className="text-sm font-semibold text-slate-900">
+                          {formatCurrency(job.price)}
+                        </div>
+                      )}
                       <select
                         value={job.status}
                         disabled={busy === job.id}
@@ -177,6 +196,14 @@ export function JobsList({
                           </option>
                         ))}
                       </select>
+                      <button
+                        onClick={() => setEditing(job)}
+                        disabled={busy === job.id}
+                        className="rounded-md p-1.5 text-slate-400 transition hover:bg-sky-50 hover:text-sky-600 disabled:opacity-50"
+                        aria-label="Edit job"
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </button>
                       <button
                         onClick={() => handleDelete(job)}
                         disabled={busy === job.id}
@@ -197,11 +224,28 @@ export function JobsList({
       <Modal open={open} onClose={() => setOpen(false)} title="New job or quote">
         <JobForm
           clients={clients}
+          users={users}
+          canManageMoney={canManageMoney}
           onSuccess={() => {
             setOpen(false);
             router.refresh();
           }}
         />
+      </Modal>
+
+      <Modal open={editing !== null} onClose={() => setEditing(null)} title="Edit job">
+        {editing && (
+          <JobForm
+            clients={clients}
+            users={users}
+            canManageMoney={canManageMoney}
+            existing={editing}
+            onSuccess={() => {
+              setEditing(null);
+              router.refresh();
+            }}
+          />
+        )}
       </Modal>
     </div>
   );
@@ -246,6 +290,23 @@ function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
       {...props}
     >
       <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function PencilIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
   );
 }

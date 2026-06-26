@@ -12,7 +12,14 @@ export default async function TeamPage() {
 
   const rows = await prisma.user.findMany({
     orderBy: [{ role: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      defaultHourlyRate: true,
+      createdAt: true,
+    },
   });
 
   const users: TeamUser[] = rows.map((u) => ({
@@ -20,6 +27,7 @@ export default async function TeamPage() {
     name: u.name,
     email: u.email,
     role: u.role === "OWNER" ? "OWNER" : "EMPLOYEE",
+    defaultHourlyRate: u.defaultHourlyRate,
     createdAt: u.createdAt.toISOString(),
   }));
 

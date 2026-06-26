@@ -1,18 +1,32 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { isJobStatus, isServiceType } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth";
+import { isJobStatus, isServiceType, parseWorkerRows } from "@/lib/utils";
 
 // GET /api/jobs — list all jobs (soonest first) with their client.
+// Employees never receive prices or attribution through the API.
 export async function GET() {
+  const me = await getCurrentUser();
+  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const jobs = await prisma.job.findMany({
     orderBy: { scheduledAt: "asc" },
     include: { client: true },
   });
-  return NextResponse.json(jobs);
+
+  if (me.role === "OWNER") return NextResponse.json(jobs);
+
+  const safe = jobs.map(({ price, soldById, ...rest }) => rest);
+  return NextResponse.json(safe);
 }
 
 // POST /api/jobs — create a job or quote linked to a client.
+// Pricing & attribution (price, soldBy, workers) are owner-only.
 export async function POST(req: Request) {
+  const me = await getCurrentUser();
+  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const isOwner = me.role === "OWNER";
+
   const body = await req.json().catch(() => null);
   if (!body) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
@@ -42,6 +56,11 @@ export async function POST(req: Request) {
     );
   }
 
+  // Owner-only money fields; employees can't set price or attribution.
+  const soldByIdRaw = Number(body.soldById);
+  const soldById = isOwner && Number.isInteger(soldByIdRaw) ? soldByIdRaw : null;
+  const workers = isOwner ? parseWorkerRows(body.workers) : [];
+
   const job = await prisma.job.create({
     data: {
       clientId,
@@ -52,10 +71,14 @@ export async function POST(req: Request) {
       completedAt: status === "COMPLETED" ? new Date() : null,
       title: title || null,
       notes: notes || null,
-      price: Number.isFinite(price) ? price : 0,
+      price: isOwner && Number.isFinite(price) ? price : 0,
+      soldById,
+      workers: workers.length ? { create: workers } : undefined,
     },
     include: { client: true },
   });
 
-  return NextResponse.json(job, { status: 201 });
+  if (isOwner) return NextResponse.json(job, { status: 201 });
+  const { price: _price, soldById: _soldById, ...safe } = job;
+  return NextResponse.json(safe, { status: 201 });
 }

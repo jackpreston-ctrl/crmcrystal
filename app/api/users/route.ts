@@ -14,7 +14,14 @@ export async function GET() {
 
   const users = await prisma.user.findMany({
     orderBy: [{ role: "asc" }, { name: "asc" }],
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      defaultHourlyRate: true,
+      createdAt: true,
+    },
   });
   return NextResponse.json(users);
 }
@@ -48,10 +55,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid role." }, { status: 400 });
   }
 
+  const rateRaw = body?.defaultHourlyRate;
+  const defaultHourlyRate =
+    rateRaw === undefined || rateRaw === null || rateRaw === ""
+      ? null
+      : Number(rateRaw);
+  if (
+    defaultHourlyRate !== null &&
+    (!Number.isFinite(defaultHourlyRate) || defaultHourlyRate < 0)
+  ) {
+    return NextResponse.json({ error: "Invalid hourly rate." }, { status: 400 });
+  }
+
   try {
     const user = await prisma.user.create({
-      data: { name, email, role, passwordHash: await hashPassword(password) },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      data: {
+        name,
+        email,
+        role,
+        defaultHourlyRate,
+        passwordHash: await hashPassword(password),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        defaultHourlyRate: true,
+        createdAt: true,
+      },
     });
     return NextResponse.json(user, { status: 201 });
   } catch (e) {
