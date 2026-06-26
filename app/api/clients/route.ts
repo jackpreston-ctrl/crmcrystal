@@ -24,13 +24,6 @@ export async function POST(req: Request) {
   const email = String(body.email ?? "").trim();
   const notes = String(body.notes ?? "").trim();
 
-  if (!firstName || !lastName || !phone || !address) {
-    return NextResponse.json(
-      { error: "First name, last name, phone, and address are required." },
-      { status: 400 }
-    );
-  }
-
   const client = await prisma.client.create({
     data: {
       firstName,

@@ -71,7 +71,7 @@ export function KnockForm({
       status,
       address,
       notes,
-      knockedAt: new Date(knockedAt).toISOString(),
+      knockedAt: knockedAt ? new Date(knockedAt).toISOString() : undefined,
       clientId: clientId || null,
     };
     try {
@@ -142,7 +142,6 @@ export function KnockForm({
             className={inputClass}
             value={knockedAt}
             onChange={(e) => setKnockedAt(e.target.value)}
-            required
           />
         </label>
         <label className="block">

@@ -99,7 +99,8 @@ export function JobForm({
       title: form.title,
       serviceType: form.serviceType,
       status: form.status,
-      scheduledAt: form.scheduledAt,
+      // Fall back to "now" so the date is never a blocker.
+      scheduledAt: form.scheduledAt || toLocalDateTimeInput(),
       notes: form.notes,
     };
     if (canManageMoney) {
@@ -132,12 +133,11 @@ export function JobForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Field label="Client" required>
+      <Field label="Client">
         <select
           className={inputClass}
           value={form.clientId}
           onChange={(e) => update("clientId", e.target.value)}
-          required
         >
           {clients.map((c) => (
             <option key={c.id} value={c.id}>
@@ -147,16 +147,13 @@ export function JobForm({
         </select>
       </Field>
 
-      <Field label="Service" required>
+      <Field label="Service">
         <select
           className={inputClass}
           value={form.serviceType}
           onChange={(e) => update("serviceType", e.target.value)}
-          required
         >
-          <option value="" disabled>
-            Select a service…
-          </option>
+          <option value="">— No service —</option>
           {SERVICE_TYPES.map((s) => (
             <option key={s} value={s}>
               {SERVICE_LABELS[s]}
@@ -203,13 +200,12 @@ export function JobForm({
         )}
       </div>
 
-      <Field label="Date & time" required>
+      <Field label="Date & time">
         <input
           type="datetime-local"
           className={inputClass}
           value={form.scheduledAt}
           onChange={(e) => update("scheduledAt", e.target.value)}
-          required
         />
       </Field>
 

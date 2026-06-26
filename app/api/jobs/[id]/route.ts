@@ -51,10 +51,7 @@ export async function PATCH(
   }
   if (body.scheduledAt !== undefined) {
     const date = new Date(body.scheduledAt);
-    if (Number.isNaN(date.getTime())) {
-      return NextResponse.json({ error: "Invalid date." }, { status: 400 });
-    }
-    data.scheduledAt = date;
+    data.scheduledAt = Number.isNaN(date.getTime()) ? new Date() : date;
   }
   if (body.title !== undefined) {
     data.title = String(body.title).trim() || null;

@@ -57,33 +57,30 @@ export function ClientForm({ onSuccess }: { onSuccess: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="First name" required>
+        <Field label="First name">
           <input
             className={inputClass}
             value={form.firstName}
             onChange={(e) => update("firstName", e.target.value)}
             autoFocus
-            required
           />
         </Field>
-        <Field label="Last name" required>
+        <Field label="Last name">
           <input
             className={inputClass}
             value={form.lastName}
             onChange={(e) => update("lastName", e.target.value)}
-            required
           />
         </Field>
       </div>
 
-      <Field label="Phone" required>
+      <Field label="Phone">
         <input
           type="tel"
           className={inputClass}
           placeholder="(650) 555-0123"
           value={form.phone}
           onChange={(e) => update("phone", e.target.value)}
-          required
         />
       </Field>
 
@@ -97,13 +94,12 @@ export function ClientForm({ onSuccess }: { onSuccess: () => void }) {
         />
       </Field>
 
-      <Field label="Street address" required>
+      <Field label="Street address">
         <input
           className={inputClass}
           placeholder="123 Example Ln"
           value={form.street}
           onChange={(e) => update("street", e.target.value)}
-          required
         />
       </Field>
 

@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
   const clientId = Number(body.clientId);
   const status = String(body.status ?? "");
-  const scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : null;
+  let scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : new Date();
   const title = String(body.title ?? "").trim();
   const notes = String(body.notes ?? "").trim();
   const price = Number(body.price);
@@ -49,12 +49,7 @@ export async function POST(req: Request) {
   if (serviceTypeRaw && !isServiceType(serviceTypeRaw)) {
     return NextResponse.json({ error: "Invalid service type." }, { status: 400 });
   }
-  if (!scheduledAt || Number.isNaN(scheduledAt.getTime())) {
-    return NextResponse.json(
-      { error: "A valid date & time is required." },
-      { status: 400 }
-    );
-  }
+  if (Number.isNaN(scheduledAt.getTime())) scheduledAt = new Date();
 
   // Owner-only money fields; employees can't set price or attribution.
   const soldByIdRaw = Number(body.soldById);
