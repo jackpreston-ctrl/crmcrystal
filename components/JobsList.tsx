@@ -160,7 +160,7 @@ export function JobsList({
                         </p>
                         <p className="truncate text-sm text-slate-500">
                           {[
-                            job.serviceType && SERVICE_LABELS[job.serviceType],
+                            job.serviceTypes.map((s) => SERVICE_LABELS[s]).join(" + "),
                             job.title,
                           ]
                             .filter(Boolean)

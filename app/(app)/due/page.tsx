@@ -4,7 +4,7 @@ import {
   DueDTO,
   ServiceType,
   REBOOK_MONTHS,
-  isServiceType,
+  parseServiceTypes,
   monthsSince,
 } from "@/lib/utils";
 
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function DuePage() {
   const [completedJobs, clientRows] = await Promise.all([
     prisma.job.findMany({
-      where: { status: "COMPLETED", serviceType: { not: null } },
+      where: { status: "COMPLETED" },
       include: { client: true },
     }),
     prisma.client.findMany({
@@ -32,18 +32,19 @@ export default async function DuePage() {
   };
   const latest = new Map<string, Latest>();
   for (const j of completedJobs) {
-    if (!isServiceType(j.serviceType)) continue;
     const when = j.completedAt ?? j.scheduledAt;
-    const key = `${j.clientId}:${j.serviceType}`;
-    const prev = latest.get(key);
-    if (!prev || when > prev.lastCompletedAt) {
-      latest.set(key, {
-        clientId: j.clientId,
-        clientName: `${j.client.firstName} ${j.client.lastName}`,
-        address: j.client.address,
-        serviceType: j.serviceType,
-        lastCompletedAt: when,
-      });
+    for (const serviceType of parseServiceTypes(j.serviceTypes, j.serviceType)) {
+      const key = `${j.clientId}:${serviceType}`;
+      const prev = latest.get(key);
+      if (!prev || when > prev.lastCompletedAt) {
+        latest.set(key, {
+          clientId: j.clientId,
+          clientName: `${j.client.firstName} ${j.client.lastName}`,
+          address: j.client.address,
+          serviceType,
+          lastCompletedAt: when,
+        });
+      }
     }
   }
 

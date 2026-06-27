@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { JobsList } from "@/components/JobsList";
-import { JobDTO, UserLite, isJobStatus, isServiceType } from "@/lib/utils";
+import { JobDTO, UserLite, isJobStatus, parseServiceTypes } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export default async function JobsPage() {
     clientId: j.clientId,
     clientName: `${j.client.firstName} ${j.client.lastName}`,
     title: j.title,
-    serviceType: isServiceType(j.serviceType) ? j.serviceType : null,
+    serviceTypes: parseServiceTypes(j.serviceTypes, j.serviceType),
     status: isJobStatus(j.status) ? j.status : "QUOTE",
     scheduledAt: j.scheduledAt.toISOString(),
     completedAt: j.completedAt ? j.completedAt.toISOString() : null,

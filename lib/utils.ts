@@ -73,6 +73,34 @@ export function isServiceType(value: unknown): value is ServiceType {
   );
 }
 
+// Jobs can cover multiple services, stored as a JSON array in Job.serviceTypes.
+// Legacy jobs only have the single Job.serviceType — fall back to it.
+export function parseServiceTypes(
+  serviceTypes: string | null | undefined,
+  legacy?: string | null
+): ServiceType[] {
+  if (serviceTypes) {
+    try {
+      const arr = JSON.parse(serviceTypes);
+      if (Array.isArray(arr)) {
+        const valid = arr.filter(isServiceType) as ServiceType[];
+        return valid.filter((s, i) => valid.indexOf(s) === i); // de-dupe, keep order
+      }
+    } catch {
+      // malformed JSON — fall through to the legacy single service
+    }
+  }
+  return isServiceType(legacy) ? [legacy] : [];
+}
+
+// Normalize an incoming list of services to a clean JSON string (or null).
+export function serializeServiceTypes(value: unknown): string | null {
+  if (!Array.isArray(value)) return null;
+  const valid = value.filter(isServiceType) as ServiceType[];
+  const unique = valid.filter((s, i) => valid.indexOf(s) === i);
+  return unique.length ? JSON.stringify(unique) : null;
+}
+
 // Serializable shapes passed from server components to client components.
 export type ClientDTO = {
   id: number;
@@ -98,7 +126,7 @@ export type JobDTO = {
   clientId: number;
   clientName: string;
   title: string | null;
-  serviceType: ServiceType | null;
+  serviceTypes: ServiceType[];
   status: JobStatus;
   scheduledAt: string; // ISO string
   completedAt: string | null; // ISO string

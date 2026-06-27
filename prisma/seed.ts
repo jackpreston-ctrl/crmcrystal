@@ -161,8 +161,9 @@ async function main() {
     },
     {
       clientId: raymond.id,
-      title: "Skylight clean",
+      title: "Skylight clean + gutter clear",
       serviceType: "WINDOW",
+      serviceTypes: JSON.stringify(["WINDOW", "GUTTER"]),
       status: "COMPLETED",
       scheduledAt: at(-2, 14, 0),
       completedAt: at(-2, 14, 0),

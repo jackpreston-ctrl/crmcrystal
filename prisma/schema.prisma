@@ -31,8 +31,11 @@ model Job {
   client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   clientId    Int
   title       String?
-  // App-level values: WINDOW | SOLAR | GUTTER | PRESSURE_WASHING (validated in lib/utils.ts)
+  // Legacy single service (kept for back-compat reads). New writes also set
+  // serviceTypes below. App-level values: WINDOW | SOLAR | GUTTER | PRESSURE_WASHING.
   serviceType String?
+  // JSON array of service codes for multi-service jobs, e.g. ["WINDOW","GUTTER"].
+  serviceTypes String?
   // App-level values: QUOTE | SCHEDULED | COMPLETED | CANCELLED
   status      String   @default("QUOTE")
   scheduledAt DateTime

@@ -45,7 +45,6 @@ export function JobForm({
           ? String(clients[0].id)
           : "",
     title: existing?.title ?? "",
-    serviceType: String(existing?.serviceType ?? defaults?.serviceType ?? "WINDOW"),
     status: (existing?.status ?? "QUOTE") as (typeof JOB_STATUSES)[number],
     scheduledAt: existing
       ? toLocalDateTimeInput(existing.scheduledAt)
@@ -54,6 +53,9 @@ export function JobForm({
     notes: existing?.notes ?? "",
     soldById: existing?.soldById != null ? String(existing.soldById) : "",
   });
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>(
+    existing?.serviceTypes ?? (defaults?.serviceType ? [defaults.serviceType] : [])
+  );
   const [workers, setWorkers] = useState<WorkerRow[]>(
     existing?.workers?.map((w) => ({
       userId: w.userId,
@@ -97,7 +99,7 @@ export function JobForm({
     const payload: Record<string, unknown> = {
       clientId: form.clientId,
       title: form.title,
-      serviceType: form.serviceType,
+      serviceTypes,
       status: form.status,
       // Fall back to "now" so the date is never a blocker.
       scheduledAt: form.scheduledAt || toLocalDateTimeInput(),
@@ -147,20 +149,35 @@ export function JobForm({
         </select>
       </Field>
 
-      <Field label="Service">
-        <select
-          className={inputClass}
-          value={form.serviceType}
-          onChange={(e) => update("serviceType", e.target.value)}
-        >
-          <option value="">— No service —</option>
-          {SERVICE_TYPES.map((s) => (
-            <option key={s} value={s}>
-              {SERVICE_LABELS[s]}
-            </option>
-          ))}
-        </select>
-      </Field>
+      <div>
+        <span className="mb-1.5 block text-sm font-medium text-slate-700">
+          Services <span className="font-normal text-slate-400">(pick any)</span>
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {SERVICE_TYPES.map((s) => {
+            const on = serviceTypes.includes(s);
+            return (
+              <button
+                type="button"
+                key={s}
+                onClick={() =>
+                  setServiceTypes((cur) =>
+                    cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]
+                  )
+                }
+                aria-pressed={on}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset transition ${
+                  on
+                    ? "bg-sky-600 text-white ring-sky-600"
+                    : "bg-white text-slate-600 ring-slate-300 hover:bg-slate-50"
+                }`}
+              >
+                {SERVICE_LABELS[s]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <Field label="Description">
         <input

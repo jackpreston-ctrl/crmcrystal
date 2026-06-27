@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { isJobStatus, isServiceType, parseWorkerRows } from "@/lib/utils";
+import {
+  isJobStatus,
+  isServiceType,
+  parseWorkerRows,
+  serializeServiceTypes,
+} from "@/lib/utils";
 import type { Prisma } from "@prisma/client";
 
 // PATCH /api/jobs/:id — update a job (status change or full edit).
@@ -42,12 +47,12 @@ export async function PATCH(
     }
     data.clientId = clientId;
   }
-  if (body.serviceType !== undefined) {
-    const raw = String(body.serviceType ?? "").trim();
-    if (raw && !isServiceType(raw)) {
-      return NextResponse.json({ error: "Invalid service type." }, { status: 400 });
-    }
-    data.serviceType = raw || null;
+  if (body.serviceTypes !== undefined || body.serviceType !== undefined) {
+    const services = (
+      Array.isArray(body.serviceTypes) ? body.serviceTypes : [body.serviceType]
+    ).filter(isServiceType);
+    data.serviceType = services[0] ?? null;
+    data.serviceTypes = serializeServiceTypes(services);
   }
   if (body.scheduledAt !== undefined) {
     const date = new Date(body.scheduledAt);

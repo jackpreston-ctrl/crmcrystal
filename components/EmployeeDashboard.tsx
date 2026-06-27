@@ -7,7 +7,7 @@ import {
   formatCurrency,
   formatDate,
   SERVICE_LABELS,
-  isServiceType,
+  parseServiceTypes,
   ServiceType,
 } from "@/lib/utils";
 
@@ -24,7 +24,7 @@ function greeting(h: number) {
 type Entry = {
   id: string;
   clientName: string;
-  serviceType: ServiceType | null;
+  serviceTypes: ServiceType[];
   when: Date;
   status: string;
   amount: number;
@@ -56,7 +56,7 @@ export async function EmployeeDashboard({
     entries.push({
       id: `c${j.id}`,
       clientName: `${j.client.firstName} ${j.client.lastName}`,
-      serviceType: isServiceType(j.serviceType) ? j.serviceType : null,
+      serviceTypes: parseServiceTypes(j.serviceTypes, j.serviceType),
       when: j.completedAt ?? j.scheduledAt,
       status: j.status,
       amount: commissionFor(j.price),
@@ -68,7 +68,7 @@ export async function EmployeeDashboard({
     entries.push({
       id: `h${w.id}`,
       clientName: `${w.job.client.firstName} ${w.job.client.lastName}`,
-      serviceType: isServiceType(w.job.serviceType) ? w.job.serviceType : null,
+      serviceTypes: parseServiceTypes(w.job.serviceTypes, w.job.serviceType),
       when: w.job.completedAt ?? w.job.scheduledAt,
       status: w.job.status,
       amount: w.hours * w.hourlyRate,
@@ -222,7 +222,7 @@ export async function EmployeeDashboard({
                   </p>
                   <p className="truncate text-xs text-slate-500">
                     {[
-                      e.serviceType && SERVICE_LABELS[e.serviceType],
+                      e.serviceTypes.map((s) => SERVICE_LABELS[s]).join(" + "),
                       e.detail,
                       formatDate(e.when),
                     ]

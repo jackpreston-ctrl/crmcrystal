@@ -10,7 +10,7 @@ import {
   SERVICE_COLORS,
   REBOOK_MONTHS,
   formatCurrency,
-  isServiceType,
+  parseServiceTypes,
   ServiceType,
   KNOCK_STATUSES,
   KNOCK_LABELS,
@@ -79,12 +79,19 @@ export default async function DashboardPage() {
   }
 
   // --- Service revenue mix (completed) ---
+  // Split each completed job's price evenly across the services it covered.
+  const mixMap = {} as Record<ServiceType, number>;
+  for (const st of SERVICE_TYPES) mixMap[st] = 0;
+  for (const j of completed) {
+    const svcs = parseServiceTypes(j.serviceTypes, j.serviceType);
+    if (!svcs.length) continue;
+    const share = j.price / svcs.length;
+    for (const st of svcs) mixMap[st] += share;
+  }
   const mix = SERVICE_TYPES.map((st) => ({
     label: SERVICE_LABELS[st],
     color: SERVICE_COLORS[st],
-    value: completed
-      .filter((j) => j.serviceType === st)
-      .reduce((s, j) => s + j.price, 0),
+    value: mixMap[st],
   })).filter((s) => s.value > 0);
   const completedRevenue = completed.reduce((s, j) => s + j.price, 0);
 
@@ -106,11 +113,12 @@ export default async function DashboardPage() {
   // --- Rebooking forecast (latest completed per property + service → due date) ---
   const latest = new Map<string, { date: Date; service: ServiceType }>();
   for (const j of completed) {
-    if (!isServiceType(j.serviceType)) continue;
     const when = j.completedAt ?? j.scheduledAt;
-    const key = `${j.clientId}:${j.serviceType}`;
-    const prev = latest.get(key);
-    if (!prev || when > prev.date) latest.set(key, { date: when, service: j.serviceType });
+    for (const service of parseServiceTypes(j.serviceTypes, j.serviceType)) {
+      const key = `${j.clientId}:${service}`;
+      const prev = latest.get(key);
+      if (!prev || when > prev.date) latest.set(key, { date: when, service });
+    }
   }
   const buckets = [
     { label: "Overdue", value: 0, highlight: true },

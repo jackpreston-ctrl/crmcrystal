@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { isJobStatus, isServiceType, parseWorkerRows } from "@/lib/utils";
+import {
+  isJobStatus,
+  isServiceType,
+  parseWorkerRows,
+  serializeServiceTypes,
+} from "@/lib/utils";
 
 // GET /api/jobs — list all jobs (soonest first) with their client.
 // Employees never receive prices or attribution through the API.
@@ -38,16 +43,16 @@ export async function POST(req: Request) {
   const title = String(body.title ?? "").trim();
   const notes = String(body.notes ?? "").trim();
   const price = Number(body.price);
-  const serviceTypeRaw = String(body.serviceType ?? "").trim();
+  // Services: new multi-service array, with a single legacy serviceType fallback.
+  const services = (
+    Array.isArray(body.serviceTypes) ? body.serviceTypes : [body.serviceType]
+  ).filter(isServiceType);
 
   if (!Number.isInteger(clientId)) {
     return NextResponse.json({ error: "A client is required." }, { status: 400 });
   }
   if (!isJobStatus(status)) {
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });
-  }
-  if (serviceTypeRaw && !isServiceType(serviceTypeRaw)) {
-    return NextResponse.json({ error: "Invalid service type." }, { status: 400 });
   }
   if (Number.isNaN(scheduledAt.getTime())) scheduledAt = new Date();
 
@@ -66,7 +71,8 @@ export async function POST(req: Request) {
       clientId,
       status,
       scheduledAt,
-      serviceType: serviceTypeRaw || null,
+      serviceType: services[0] ?? null,
+      serviceTypes: serializeServiceTypes(services),
       // Stamp completion the moment a job is created already done.
       completedAt: status === "COMPLETED" ? new Date() : null,
       title: title || null,
