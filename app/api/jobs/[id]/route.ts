@@ -66,8 +66,9 @@ export async function PATCH(
     data.price = Number.isFinite(price) ? price : 0;
   }
   if (isOwner && body.soldById !== undefined) {
+    // Number(null) === 0; guard with > 0 so "no salesperson" stays null.
     const soldById = Number(body.soldById);
-    data.soldById = Number.isInteger(soldById) ? soldById : null;
+    data.soldById = Number.isInteger(soldById) && soldById > 0 ? soldById : null;
   }
   if (isOwner && body.workers !== undefined) {
     // Replace the whole worker set in one atomic update.

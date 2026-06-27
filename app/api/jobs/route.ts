@@ -52,8 +52,13 @@ export async function POST(req: Request) {
   if (Number.isNaN(scheduledAt.getTime())) scheduledAt = new Date();
 
   // Owner-only money fields; employees can't set price or attribution.
+  // Note: Number(null) === 0, so guard with > 0 — otherwise "no salesperson"
+  // becomes soldById: 0 and the User foreign key blows up.
   const soldByIdRaw = Number(body.soldById);
-  const soldById = isOwner && Number.isInteger(soldByIdRaw) ? soldByIdRaw : null;
+  const soldById =
+    isOwner && Number.isInteger(soldByIdRaw) && soldByIdRaw > 0
+      ? soldByIdRaw
+      : null;
   const workers = isOwner ? parseWorkerRows(body.workers) : [];
 
   const job = await prisma.job.create({
